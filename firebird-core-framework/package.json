@@ -1,5 +1,5 @@
 {
-  "name": "firebird-core-framework",
+  "name": "@thalesrr1/firebird-core-framework",
   "version": "1.0.0",
   "description": "Um framework completo para integração com banco de dados Firebird, oferecendo gerenciamento de conexões, consultas SQL e suporte a plugins.",
   "main": "dist/index.js",
