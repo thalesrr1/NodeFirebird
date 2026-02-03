@@ -11,6 +11,7 @@ export interface FirebirdConfig {
   password: string;
   database: string;
   pool?: {
+    // Propriedades antigas (para retrocompatibilidade)
     min?: number;
     max?: number;
     createTimeout?: number;
@@ -19,9 +20,49 @@ export interface FirebirdConfig {
     reapInterval?: number;
     createRetryInterval?: number;
     propagateCreateError?: boolean;
+    
+    // Propriedades novas (nomes corretos do Tarn.js)
+    acquireTimeoutMillis?: number;
+    createTimeoutMillis?: number;
+    destroyTimeoutMillis?: number;
+    idleTimeoutMillis?: number;
+    reapIntervalMillis?: number;
+    createRetryIntervalMillis?: number;
+    validate?: (resource: any) => boolean;
+    afterCreate?: (conn: any) => any;
+    maxConnectionLifetimeMillis?: number;
+    maxConnectionLifetimeJitterMillis?: number;
   };
   acquireTimeout?: number;
   options?: Record<string, any>;
+}
+
+/**
+ * Interface que define a configuração do pool de conexões
+ */
+export interface PoolConfig {
+  // Propriedades antigas (para retrocompatibilidade)
+  min?: number;
+  max?: number;
+  createTimeout?: number;
+  destroyTimeout?: number;
+  idleTimeout?: number;
+  reapInterval?: number;
+  createRetryInterval?: number;
+  propagateCreateError?: boolean;
+  
+  // Propriedades novas (nomes corretos do Tarn.js)
+  acquireTimeout?: number;  // Adicionando acquireTimeout à interface PoolConfig para retrocompatibilidade
+  acquireTimeoutMillis?: number;
+  createTimeoutMillis?: number;
+  destroyTimeoutMillis?: number;
+  idleTimeoutMillis?: number;
+  reapIntervalMillis?: number;
+  createRetryIntervalMillis?: number;
+  validate?: (resource: any) => boolean;
+  afterCreate?: (conn: any) => any;
+  maxConnectionLifetimeMillis?: number;
+  maxConnectionLifetimeJitterMillis?: number;
 }
 
 /**

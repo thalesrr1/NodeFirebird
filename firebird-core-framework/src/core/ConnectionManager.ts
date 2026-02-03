@@ -1,6 +1,6 @@
 import knex, { Knex } from 'knex';
 import FirebirdClient from 'knex-firebird-dialect';
-import { ConfigManager, FirebirdConfig } from './ConfigManager';
+import { ConfigManager, FirebirdConfig, PoolConfig } from './ConfigManager';
 import { PluginManager } from './PluginManager';
 
 /**
@@ -18,23 +18,6 @@ export interface ValidationResult {
   valid: boolean;
   message?: string;
   error?: string;
-}
-
-/**
- * Interface que define a configuração do pool de conexões
- * OBS: Não inclui acquireTimeout pois o Tarn usa acquireTimeoutMillis
- * A propriedade acquireTimeout é tratada separadamente e convertida para acquireTimeoutMillis
- * durante a criação da configuração do Knex para garantir compatibilidade
- */
-export interface PoolConfig {
-  min?: number;
-  max?: number;
-  createTimeout?: number;
-  destroyTimeout?: number;
-  idleTimeout?: number;
-  reapInterval?: number;
-  createRetryInterval?: number;
-  propagateCreateError?: boolean;
 }
 
 /**
@@ -60,16 +43,12 @@ export class ConnectionManager {
       username: config.username || 'SYSDBA',
       password: config.password,
       database: config.database,
-      acquireTimeout: config.acquireTimeout || 30000, // Valor padrão de 30 segundos
+      acquireTimeout: config.acquireTimeout || 30000, // Valor padrão de 30 segundos para retrocompatibilidade
       pool: {
         min: config.pool?.min || 2,
         max: config.pool?.max || 10,
-        createTimeout: config.pool?.createTimeout || 30000,
-        destroyTimeout: config.pool?.destroyTimeout || 5000,
-        idleTimeout: config.pool?.idleTimeout || 600000,
-        reapInterval: config.pool?.reapInterval || 1000,
-        createRetryInterval: config.pool?.createRetryInterval || 100,
-        propagateCreateError: config.pool?.propagateCreateError || false,
+        // Incluir todas as propriedades do pool original
+        ...config.pool,
       },
       options: config.options || {}
     };
@@ -88,19 +67,72 @@ export class ConnectionManager {
         await this.pluginManager.beforeConnect(this.config);
       }
 
-      // Cria uma cópia do pool de configuração excluindo qualquer propriedade não suportada pelo Tarn
-      // Corrige o erro "Tarn: unsupported option opt.acquireTimeout" renomeando a propriedade
-      const poolConfig = {
-        min: this.config.pool?.min || 2,
-        max: this.config.pool?.max || 10,
-        createTimeout: this.config.pool?.createTimeout || 30000,
-        destroyTimeout: this.config.pool?.destroyTimeout || 5000,
-        idleTimeout: this.config.pool?.idleTimeout || 600000,
-        reapInterval: this.config.pool?.reapInterval || 1000,
-        createRetryInterval: this.config.pool?.createRetryInterval || 100,
-        propagateCreateError: this.config.pool?.propagateCreateError || false,
-        acquireTimeoutMillis: this.config.acquireTimeout, // Renomeia acquireTimeout para acquireTimeoutMillis para compatibilidade com Tarn
+      // Função para sanitizar o objeto pool removendo opções inválidas e convertendo propriedades antigas
+      const sanitizePoolConfig = (poolOptions: any) => {
+        // Lista branca (whitelist) com as opções válidas do pool do tarn.js
+        const validPoolOptions = [
+          'min',
+          'max',
+          'acquireTimeoutMillis',
+          'createTimeoutMillis',
+          'destroyTimeoutMillis',
+          'idleTimeoutMillis',
+          'reapIntervalMillis',
+          'createRetryIntervalMillis',
+          'validate',
+          'afterCreate',
+          'maxConnectionLifetimeMillis',
+          'maxConnectionLifetimeJitterMillis',
+          // Incluindo propriedades antigas para que possamos convertê-las
+          'acquireTimeout',
+          'createTimeout',
+          'destroyTimeout',
+          'idleTimeout',
+          'reapInterval',
+          'createRetryInterval',
+          'propagateCreateError'
+        ];
+        
+        // Mapeamento de propriedades antigas para novos nomes
+        const propertyMapping: { [key: string]: string } = {
+          'acquireTimeout': 'acquireTimeoutMillis',
+          'createTimeout': 'createTimeoutMillis',
+          'destroyTimeout': 'destroyTimeoutMillis',
+          'idleTimeout': 'idleTimeoutMillis',
+          'reapInterval': 'reapIntervalMillis',
+          'createRetryInterval': 'createRetryIntervalMillis',
+          // propagateCreateError não muda de nome, mas pode ser incluído para consistência
+        };
+        
+        const sanitizedPool: any = {};
+        
+        // Processa todas as propriedades do pool original
+        for (const [key, value] of Object.entries(poolOptions)) {
+          // Verifica se é uma propriedade antiga que precisa ser convertida
+          if (propertyMapping[key]) {
+            const newKey = propertyMapping[key];
+            // Apenas adiciona à configuração sanitizada se a nova chave estiver na whitelist
+            if (validPoolOptions.includes(newKey)) {
+              sanitizedPool[newKey] = value;
+            }
+          } else if (validPoolOptions.includes(key)) {
+            // Adiciona propriedades que já estão com o nome correto
+            sanitizedPool[key] = value;
+          }
+        }
+        
+        // Garante que os valores padrão estejam definidos
+        if (sanitizedPool.min === undefined) sanitizedPool.min = 2;
+        if (sanitizedPool.max === undefined) sanitizedPool.max = 10;
+        
+        return sanitizedPool;
       };
+      
+      // Aplica a sanitização no objeto pool para remover opções inválidas e converter propriedades antigas
+      const poolConfig = sanitizePoolConfig({
+        ...this.config.pool,
+        acquireTimeout: this.config.acquireTimeout, // Inclui a propriedade acquireTimeout para ser convertida
+      });
 
       const knexConfig: Knex.Config = {
         client: FirebirdClient,

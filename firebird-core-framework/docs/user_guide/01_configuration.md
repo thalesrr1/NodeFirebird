@@ -38,13 +38,55 @@ As opções de pool são críticas para o desempenho e estabilidade da aplicaç�
 interface PoolConfig {
   min?: number;                // Número mínimo de conexões no pool
   max?: number;                // Número máximo de conexões no pool
-  acquireTimeout?: number;     // Tempo limite para obter uma conexão do pool
-  createTimeout?: number;      // Tempo limite para criar uma nova conexão
-  destroyTimeout?: number;     // Tempo limite para destruir uma conexão
-  idleTimeout?: number;        // Tempo máximo que uma conexão pode ficar ociosa
-  reapInterval?: number;       // Intervalo para verificar conexões ociosas
-  createRetryInterval?: number; // Intervalo entre tentativas de criação de conexão
+  acquireTimeoutMillis?: number;     // Tempo limite em milissegundos para obter uma conexão do pool
+  createTimeoutMillis?: number;      // Tempo limite em milissegundos para criar uma nova conexão
+  destroyTimeoutMillis?: number;     // Tempo limite em milissegundos para destruir uma conexão
+  idleTimeoutMillis?: number;        // Tempo máximo em milissegundos que uma conexão pode ficar ociosa
+  reapIntervalMillis?: number;       // Intervalo em milissegundos para verificar conexões ociosas
+  createRetryIntervalMillis?: number; // Intervalo em milissegundos entre tentativas de criação de conexão
+  validate?: (connection: any) => boolean; // Função para validar se uma conexão é válida
+  afterCreate?: (connection: any) => any;  // Função chamada após a criação de uma conexão
+  maxConnectionLifetimeMillis?: number;    // Tempo máximo de vida útil de uma conexão em milissegundos
+  maxConnectionLifetimeJitterMillis?: number; // Jitter para tempo máximo de vida útil em milissegundos
   propagateCreateError?: boolean; // Se erros de criação devem ser propagados
+}
+
+## Propriedades do Pool Suportadas (Whitelist)
+
+O pool de conexões suporta as seguintes propriedades que são validadas e sanitizadas internamente:
+
+| Propriedade | Tipo | Descrição |
+|-------------|------|-----------|
+| `min` | `number` | Número mínimo de conexões mantidas no pool |
+| `max` | `number` | Número máximo de conexões permitidas no pool |
+| `acquireTimeoutMillis` | `number` | Tempo limite em milissegundos para obter uma conexão do pool |
+| `createTimeoutMillis` | `number` | Tempo limite em milissegundos para criar uma nova conexão |
+| `destroyTimeoutMillis` | `number` | Tempo limite em milissegundos para destruir uma conexão |
+| `idleTimeoutMillis` | `number` | Tempo máximo em milissegundos que uma conexão pode ficar ociosa |
+| `reapIntervalMillis` | `number` | Intervalo em milissegundos para verificar e limpar conexões ociosas |
+| `createRetryIntervalMillis` | `number` | Intervalo em milissegundos entre tentativas de criação de conexão |
+| `validate` | `(connection: any) => boolean` | Função para validar se uma conexão é válida antes de ser usada |
+| `afterCreate` | `(connection: any) => any` | Função chamada imediatamente após a criação de uma conexão |
+| `maxConnectionLifetimeMillis` | `number` | Tempo máximo de vida útil de uma conexão em milissegundos |
+| `maxConnectionLifetimeJitterMillis` | `number` | Jitter adicional aleatório para o tempo máximo de vida útil |
+| `propagateCreateError` | `boolean` | Indica se erros durante a criação de conexão devem ser propagados |
+
+## Nota de Compatibilidade (Legacy Support)
+
+Para manter compatibilidade com versões anteriores, as seguintes propriedades antigas ainda são aceitas e serão convertidas internamente para seus equivalentes modernos:
+
+| Propriedade Antiga | Convertida Para |
+|------------------|------------------|
+| `acquireTimeout` | `acquireTimeoutMillis` |
+| `createTimeout` | `createTimeoutMillis` |
+| `destroyTimeout` | `destroyTimeoutMillis` |
+| `idleTimeout` | `idleTimeoutMillis` |
+| `reapInterval` | `reapIntervalMillis` |
+| `createRetryInterval` | `createRetryIntervalMillis` |
+
+Esta conversão automática garante que configurações antigas continuem funcionando enquanto você gradualmente atualiza para os nomes de propriedades padronizados.
+
+É recomendado utilizar os nomes de propriedades modernos (`*Millis`) para novas implementações, pois representam com mais clareza que os valores devem ser especificados em milissegundos.
 }
 ```
 
@@ -60,7 +102,7 @@ interface PoolConfig {
 - Prevenir sobrecarga do servidor Firebird com conexões excessivas
 - Em alta carga, este valor deve considerar o limite do servidor e os recursos disponíveis
 
-#### `acquireTimeout` (padrão: 30000ms)
+#### `acquireTimeoutMillis` (padrão: 30000ms)
 - Tempo máximo que uma operação aguardará por uma conexão disponível no pool
 - Em alta carga, um timeout adequado evita que requisições fiquem bloqueadas indefinidamente
 - Pode ajudar a prevenir cascata de falhas em situações de pico
@@ -89,12 +131,12 @@ const highLoadConfig: FirebirdConfig = {
   pool: {
     min: 10,                    // Manter 10 conexões ativas no mínimo
     max: 50,                    // Permitir até 50 conexões simultâneas
-    acquireTimeout: 60000,      // Aguardar até 60 segundos por uma conexão
-    createTimeout: 30000,       // Timeout de 30 segundos para criar conexão
-    destroyTimeout: 5000,       // Timeout de 5 segundos para destruir conexão
-    idleTimeout: 300000,        // Conexões ociosas duram até 5 minutos
-    reapInterval: 1000,         // Verificar conexões a cada segundo
-    createRetryInterval: 200,   // Tentar novamente a cada 200ms
+    acquireTimeoutMillis: 60000,      // Aguardar até 60 segundos por uma conexão
+    createTimeoutMillis: 30000,       // Timeout de 30 segundos para criar conexão
+    destroyTimeoutMillis: 5000,       // Timeout de 5 segundos para destruir conexão
+    idleTimeoutMillis: 300000,        // Conexões ociosas duram até 5 minutos
+    reapIntervalMillis: 1000,         // Verificar conexões a cada segundo
+    createRetryIntervalMillis: 200,   // Tentar novamente a cada 200ms
     propagateCreateError: false // Não propagar erros de criação
   }
 };
@@ -113,10 +155,10 @@ FIREBIRD_DATABASE=/caminho/para/seu/banco.fdb
 # Configurações do pool (valores padrão podem ser substituídos)
 FIREBIRD_POOL_MIN=5
 FIREBIRD_POOL_MAX=20
-FIREBIRD_POOL_ACQUIRE_TIMEOUT=30000
-FIREBIRD_POOL_CREATE_TIMEOUT=30000
-FIREBIRD_POOL_DESTROY_TIMEOUT=5000
-FIREBIRD_POOL_IDLE_TIMEOUT=600000
+FIREBIRD_POOL_ACQUIRE_TIMEOUT_MILLIS=30000
+FIREBIRD_POOL_CREATE_TIMEOUT_MILLIS=30000
+FIREBIRD_POOL_DESTROY_TIMEOUT_MILLIS=5000
+FIREBIRD_POOL_IDLE_TIMEOUT_MILLIS=600000
 ```
 
 ## Considerações Finais
