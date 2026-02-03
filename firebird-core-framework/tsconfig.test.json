@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es2017",
+    "sourceMap": false,
+    "outDir": "./dist-test",
+    "rootDir": ".",
+    "allowJs": true,
+    "resolveJsonModule": true
+  },
+  "include": [
+    "tests/**/*",
+    "src/**/*"
+  ]
+}
