@@ -22,11 +22,13 @@ export interface ValidationResult {
 
 /**
  * Interface que define a configuração do pool de conexões
+ * OBS: Não inclui acquireTimeout pois o Tarn usa acquireTimeoutMillis
+ * A propriedade acquireTimeout é tratada separadamente e convertida para acquireTimeoutMillis
+ * durante a criação da configuração do Knex para garantir compatibilidade
  */
 export interface PoolConfig {
   min?: number;
   max?: number;
-  acquireTimeout?: number;
   createTimeout?: number;
   destroyTimeout?: number;
   idleTimeout?: number;
@@ -58,10 +60,10 @@ export class ConnectionManager {
       username: config.username || 'SYSDBA',
       password: config.password,
       database: config.database,
+      acquireTimeout: config.acquireTimeout || 30000, // Valor padrão de 30 segundos
       pool: {
         min: config.pool?.min || 2,
         max: config.pool?.max || 10,
-        acquireTimeout: config.pool?.acquireTimeout || 30000,
         createTimeout: config.pool?.createTimeout || 30000,
         destroyTimeout: config.pool?.destroyTimeout || 5000,
         idleTimeout: config.pool?.idleTimeout || 600000,
@@ -86,6 +88,20 @@ export class ConnectionManager {
         await this.pluginManager.beforeConnect(this.config);
       }
 
+      // Cria uma cópia do pool de configuração excluindo qualquer propriedade não suportada pelo Tarn
+      // Corrige o erro "Tarn: unsupported option opt.acquireTimeout" renomeando a propriedade
+      const poolConfig = {
+        min: this.config.pool?.min || 2,
+        max: this.config.pool?.max || 10,
+        createTimeout: this.config.pool?.createTimeout || 30000,
+        destroyTimeout: this.config.pool?.destroyTimeout || 5000,
+        idleTimeout: this.config.pool?.idleTimeout || 600000,
+        reapInterval: this.config.pool?.reapInterval || 1000,
+        createRetryInterval: this.config.pool?.createRetryInterval || 100,
+        propagateCreateError: this.config.pool?.propagateCreateError || false,
+        acquireTimeoutMillis: this.config.acquireTimeout, // Renomeia acquireTimeout para acquireTimeoutMillis para compatibilidade com Tarn
+      };
+
       const knexConfig: Knex.Config = {
         client: FirebirdClient,
         connection: {
@@ -96,7 +112,8 @@ export class ConnectionManager {
           database: this.config.database,
           ...this.config.options
         },
-        pool: this.config.pool
+        pool: poolConfig,
+        acquireConnectionTimeout: this.config.acquireTimeout // Define acquireTimeout na raiz da configuração do Knex para compatibilidade
       };
 
       this.connection = knex(knexConfig);

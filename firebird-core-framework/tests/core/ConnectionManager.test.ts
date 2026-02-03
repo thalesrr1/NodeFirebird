@@ -131,7 +131,6 @@ describe('ConnectionManager', () => {
 
       expect(config.pool?.min).toBe(2);
       expect(config.pool?.max).toBe(10);
-      expect(config.pool?.acquireTimeout).toBe(30000);
     });
 
     it('deve integrar com ConfigManager quando fornecido', () => {

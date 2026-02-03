@@ -13,7 +13,6 @@ export interface FirebirdConfig {
   pool?: {
     min?: number;
     max?: number;
-    acquireTimeout?: number;
     createTimeout?: number;
     destroyTimeout?: number;
     idleTimeout?: number;
@@ -21,6 +20,7 @@ export interface FirebirdConfig {
     createRetryInterval?: number;
     propagateCreateError?: boolean;
   };
+  acquireTimeout?: number;
   options?: Record<string, any>;
 }
 
