@@ -11,6 +11,10 @@ export { FirebirdCore } from './core/FirebirdCore';
 
 // Exportar interfaces importantes
 export { PluginInterface } from './interfaces/PluginInterface';
+export { AdapterInterface } from './interfaces/AdapterInterface';
+
+// Exportar adapters
+export { ExpressAdapter } from './adapters/ExpressAdapter';
 
 // Tipos e interfaces auxiliares
 /**
@@ -43,48 +47,4 @@ export enum PluginHookTypes {
   ON_ERROR = 'onError',
   /** Na destruição do plugin */
   DESTROY = 'destroy'
-}
-
-/**
- * Adapter para integração com o Express.js
- * 
- * Esta classe serve como um ponto de integração entre o Firebird Core Framework
- * e o framework Express.js, permitindo que endpoints sejam facilmente conectados
- * às funcionalidades do Firebird Core.
- */
-export class ExpressAdapter {
-  /**
-   * Instância do framework Firebird Core
-   */
-  private firebirdCore: any;
-
-  /**
-   * Construtor do adapter
-   * @param firebirdCore - Instância do FirebirdCore para integração
-   */
-  constructor(firebirdCore: any) {
-    this.firebirdCore = firebirdCore;
-  }
-
-  /**
-   * Método placeholder para integrar rotas do Express com o Firebird Core
-   * @param app - Instância do aplicativo Express
-   * @param options - Opções de configuração para o adapter
-   */
-  integrateWithExpress(app: any, options?: any): void {
-    // Placeholder - implementação futura
-    console.log('Integração com Express ainda não implementada');
-  }
-
-  /**
-   * Middleware para autenticação de requisições
-   * @returns Função middleware do Express
-   */
-  authMiddleware(): (req: any, res: any, next: any) => void {
-    // Placeholder - implementação futura
-    return (req: any, res: any, next: any) => {
-      // Lógica de autenticação será implementada futuramente
-      next();
-    };
-  }
 }

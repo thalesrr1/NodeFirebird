@@ -1,2 +1,0 @@
-NodeFirebirds
-"Hello World"
