@@ -16,7 +16,10 @@ describe('QueryService', () => {
 
   beforeEach(() => {
     // Configurar mocks
-    mockConnection = {
+    const mockConnectionFn = jest.fn(); // A função base (knex('tabela'))
+
+    // Adicionar os métodos do Knex à função
+    Object.assign(mockConnectionFn, {
       raw: jest.fn(),
       transaction: jest.fn(),
       select: jest.fn(),
@@ -24,7 +27,17 @@ describe('QueryService', () => {
       limit: jest.fn(),
       offset: jest.fn(),
       orderBy: jest.fn(),
-    };
+      // Adicione outros se necessário
+    });
+
+    mockConnection = mockConnectionFn;
+
+    // Atualizar o mock da transaction para garantir que erros subam
+    mockConnection.transaction.mockImplementation(async (callback: (trx: any) => Promise<any>) => {
+      // Simula um objeto TRX que também tem .raw
+      const trxMock = { raw: mockConnection.raw }; 
+      return await callback(trxMock);
+    });
 
     mockConnectionManager = new ConnectionManager({} as any) as jest.Mocked<ConnectionManager>;
     mockConnectionManager.isConnected.mockReturnValue(true);
