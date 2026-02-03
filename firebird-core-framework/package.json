@@ -1,0 +1,55 @@
+{
+  "name": "firebird-core-framework",
+  "version": "1.0.0",
+  "description": "Um framework completo para integração com banco de dados Firebird, oferecendo gerenciamento de conexões, consultas SQL e suporte a plugins.",
+  "main": "dist/index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thalesrr1/NodeFirebird"
+  },
+  "homepage": "https://github.com/thalesrr1/NodeFirebird/blob/main/README.md",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "prepublishOnly": "npm test && npm run build"
+  },
+  "keywords": [
+    "firebird",
+    "knex",
+    "database",
+    "sql",
+    "framework",
+    "node"
+  ],
+  "author": "Thales Tavares <thalesroberto.f@gmail.com>",
+  "license": "ISC",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "knex": "^3.1.0",
+    "knex-firebird-dialect": "^2.1.4",
+    "node-firebird": "^1.1.9"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^25.2.0",
+    "eslint": "^9.39.2",
+    "express": "^5.2.1",
+    "jest": "^30.2.0",
+    "nodemon": "^3.1.11",
+    "ts-jest": "^29.4.6",
+    "typescript": "^5.9.3"
+  },
+  "bugs": {
+    "url": "https://github.com/thalesrr1/NodeFirebird/issues"
+  }
+}

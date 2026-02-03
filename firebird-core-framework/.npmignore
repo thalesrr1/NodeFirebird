@@ -1,0 +1,16 @@
+# Diretórios de teste e documentação
+tests/
+docs/
+
+# Arquivos de configuração
+*.test.*
+*.spec.*
+
+# Outros arquivos desnecessários
+.git/
+.github/
+.editorconfig
+.eslintrc.json
+jest.config.js
+tsconfig.json
+tsconfig.test.json
