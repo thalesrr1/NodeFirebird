@@ -501,22 +501,68 @@ describe('ConnectionManager', () => {
       expect(mockPluginManager.afterQueryParams).toEqual([{ id: 1, name: 'John' }]);
     });
 
-    it('deve chamar hook onError durante query-error', async () => {
-      connectionManager.setPluginManager(mockPluginManager);
-      await connectionManager.connect();
-      const connection = connectionManager.getConnection();
-
-      // Simular evento de query-error
-      const errorHandler = (connection?.on as jest.Mock).mock.calls.find(
-        (call: any[]) => call[0] === 'query-error'
-      )?.[1];
-
-      if (errorHandler) {
-        errorHandler(new Error('Query failed'), { sql: 'SELECT * FROM users' });
-      }
-
-      expect(mockPluginManager.onErrorCalled).toBe(true);
-      expect(mockPluginManager.errorParams).toBeInstanceOf(Error);
-    });
-  });
-});
+     it('deve chamar hook onError durante query-error', async () => {
+       connectionManager.setPluginManager(mockPluginManager);
+       await connectionManager.connect();
+       const connection = connectionManager.getConnection();
+ 
+       // Simular evento de query-error
+       const errorHandler = (connection?.on as jest.Mock).mock.calls.find(
+         (call: any[]) => call[0] === 'query-error'
+       )?.[1];
+ 
+       if (errorHandler) {
+         errorHandler(new Error('Query failed'), { sql: 'SELECT * FROM users' });
+       }
+ 
+       expect(mockPluginManager.onErrorCalled).toBe(true);
+       expect(mockPluginManager.errorParams).toBeInstanceOf(Error);
+     });
+   });
+ 
+   describe('Custom Client Library Path', () => {
+     beforeEach(() => {
+       configManager = new ConfigManager(testConfig);
+       connectionManager = new ConnectionManager(testConfig, configManager);
+       mockPluginManager = new MockPluginManager();
+       jest.clearAllMocks();
+     });
+ 
+     it('should reject connection when client library file does not exist', async () => {
+       // Mock fs.existsSync to return false for the specified path
+       jest.spyOn(require('fs'), 'existsSync').mockReturnValue(false);
+       
+       const configWithFakePath = {
+         ...testConfig,
+         clientLibPath: '/path/to/fake/fbclient.dll'
+       };
+       
+       const manager = new ConnectionManager(configWithFakePath);
+       
+       await expect(manager.connect()).rejects.toThrow('Falha na conexão:');
+     });
+ 
+     it('should inject client library path configuration correctly', async () => {
+       // Mock fs.existsSync to return true for the specified path
+       jest.spyOn(require('fs'), 'existsSync').mockReturnValue(true);
+       
+       const validPath = '/valid/path/fbclient.dll';
+       const configWithValidPath = {
+         ...testConfig,
+         clientLibPath: validPath
+       };
+       
+       const manager = new ConnectionManager(configWithValidPath);
+       await manager.connect();
+       
+       // Verify that knex was called with the correct configuration
+       expect(knex).toHaveBeenCalledWith(
+         expect.objectContaining({
+           connection: expect.objectContaining({
+             clientLibPath: validPath
+           })
+         })
+       );
+     });
+   });
+ });

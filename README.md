@@ -27,6 +27,9 @@ const config = {
   pool: {
     min: 2,
     max: 10,
+    acquireTimeoutMillis: 30000,
+    createTimeoutMillis: 30000,
+    destroyTimeoutMillis: 5000,
   },
 };
 
@@ -72,6 +75,9 @@ const config = {
   pool: {
     min: 2,
     max: 10,
+    acquireTimeoutMillis: 30000,
+    createTimeoutMillis: 30000,
+    destroyTimeoutMillis: 5000,
   },
 };
 
@@ -92,6 +98,20 @@ app.listen(PORT, async () => {
 ```
 
 Este exemplo configura automaticamente rotas como `/health` para verificação de status e `/query` para execução de consultas SQL.
+
+## Opções de Configuração
+
+As principais opções de configuração disponíveis para o FirebirdCore são:
+
+| Propriedade | Tipo | Descrição | Opcional |
+|-------------|------|-----------|----------|
+| `host` | string | Endereço do servidor Firebird | Não |
+| `port` | number | Porta do servidor Firebird (padrão: 3050) | Sim |
+| `database` | string | Caminho completo para o banco de dados | Não |
+| `user` | string | Nome de usuário para autenticação | Não |
+| `password` | string | Senha para autenticação | Não |
+| `pool` | object | Configurações do pool de conexões | Sim |
+| `clientLibPath` | string | Caminho customizado para a biblioteca do Firebird | Sim |
 
 ## Dependências e Compatibilidade
 

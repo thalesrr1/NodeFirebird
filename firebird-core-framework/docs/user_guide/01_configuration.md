@@ -13,6 +13,7 @@ interface FirebirdConfig {
   username: string;
   password: string;
   database: string;
+  clientLibPath?: string;           // Caminho customizado para a biblioteca do Firebird (opcional)
   pool?: PoolConfig;
   options?: Record<string, any>;
 }
@@ -25,8 +26,30 @@ interface FirebirdConfig {
 - `username`: Nome de usuário para autenticação
 - `password`: Senha para autenticação
 - `database`: Caminho completo ou nome do banco de dados
+- `clientLibPath`: Caminho customizado para a biblioteca do Firebird (opcional)
 - `pool`: Configurações do pool de conexões (opcional)
 - `options`: Opções adicionais específicas do driver (opcional)
+
+## Carregamento de Biblioteca Customizada (fbclient)
+
+Por padrão, o framework tenta carregar a biblioteca cliente do Firebird (fbclient.dll no Windows ou libfbclient.so no Linux) a partir do sistema. Em alguns ambientes ou cenários específicos, pode ser necessário especificar uma versão específica da biblioteca para evitar conflitos ou garantir compatibilidade.
+
+Para isso, utilize a propriedade `clientLibPath` na configuração:
+
+```typescript
+import { FirebirdCore } from 'firebird-core-framework';
+import path from 'path';
+
+const db = new FirebirdCore({
+    host: 'localhost',
+    database: '/dados/banco.fdb',
+    // Apontando para uma DLL específica para evitar conflitos
+    clientLibPath: path.join(__dirname, 'bin', 'fbclient.dll'),
+    // ...
+});
+```
+
+Essa abordagem é especialmente útil quando você precisa garantir que sua aplicação utilize uma versão específica da biblioteca cliente do Firebird, como quando está empacotando sua aplicação com uma versão específica da biblioteca ou quando há conflitos com versões instaladas no sistema.
 
 ## Configuração do Pool de Conexões
 

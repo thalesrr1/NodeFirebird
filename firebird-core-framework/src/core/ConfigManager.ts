@@ -10,6 +10,11 @@ export interface FirebirdConfig {
   username: string;
   password: string;
   database: string;
+  /**
+   * Caminho absoluto para a biblioteca cliente do Firebird (fbclient.dll no Windows ou libfbclient.so no Linux).
+   * Esta propriedade é opcional e permite especificar um caminho personalizado para a biblioteca cliente.
+   */
+  clientLibPath?: string;
   pool?: {
     // Propriedades antigas (para retrocompatibilidade)
     min?: number;
@@ -154,6 +159,7 @@ export class ConfigManager {
     const testConfig = config || this.config;
 
     const requiredFields = ['host', 'port', 'username', 'password', 'database'];
+    // clientLibPath é opcional, então não está na lista de campos obrigatórios
     const missingFields: string[] = [];
 
     for (const field of requiredFields) {

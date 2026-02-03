@@ -1,5 +1,6 @@
 import knex, { Knex } from 'knex';
 import FirebirdClient from 'knex-firebird-dialect';
+import * as fs from 'fs';
 import { ConfigManager, FirebirdConfig, PoolConfig } from './ConfigManager';
 import { PluginManager } from './PluginManager';
 
@@ -44,6 +45,7 @@ export class ConnectionManager {
       password: config.password,
       database: config.database,
       acquireTimeout: config.acquireTimeout || 30000, // Valor padrão de 30 segundos para retrocompatibilidade
+      clientLibPath: config.clientLibPath, // Adicionando a propriedade clientLibPath
       pool: {
         min: config.pool?.min || 2,
         max: config.pool?.max || 10,
@@ -134,6 +136,13 @@ export class ConnectionManager {
         acquireTimeout: this.config.acquireTimeout, // Inclui a propriedade acquireTimeout para ser convertida
       });
 
+      // Validação de segurança para clientLibPath
+      if (this.config.clientLibPath) {
+        if (!fs.existsSync(this.config.clientLibPath)) {
+          throw new Error(`Client library file not found at: ${this.config.clientLibPath}`);
+        }
+      }
+
       const knexConfig: Knex.Config = {
         client: FirebirdClient,
         connection: {
@@ -142,6 +151,8 @@ export class ConnectionManager {
           user: this.config.username,
           password: this.config.password,
           database: this.config.database,
+          // Injeta apenas se estiver definido na config
+          ...(this.config.clientLibPath && { clientLibPath: this.config.clientLibPath }),
           ...this.config.options
         },
         pool: poolConfig,
@@ -153,8 +164,9 @@ export class ConnectionManager {
       // Configurar monitoramento
       this.setupMonitoring();
       
-      // Testar conexão
-      await this.connection.raw('SELECT 1 AS test');
+      // Testar conexão - usando RDB$DATABASE para compatibilidade com Firebird
+      // RDB$DATABASE é uma tabela virtual do Firebird que sempre existe
+      await this.connection.raw('SELECT 1 AS test FROM RDB$DATABASE;');
       this.isConnectedFlag = true;
       
       // Emitir evento afterConnect para plugins
@@ -294,7 +306,9 @@ export class ConnectionManager {
         },
       });
       
-      await tempKnex.raw('SELECT 1 AS test');
+      // Testar conexão - usando RDB$DATABASE para compatibilidade com Firebird
+      // RDB$DATABASE é uma tabela virtual do Firebird que sempre existe
+      await tempKnex.raw('SELECT 1 AS test FROM RDB$DATABASE;');
       await tempKnex.destroy();
       return { valid: true, message: 'Conexão válida' };
     } catch (error) {
